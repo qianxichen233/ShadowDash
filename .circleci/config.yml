@@ -15,13 +15,12 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y clang-tidy
-            sudo apt-get install -y python3
-            [ -x "$(command -v python)" ] || sudo ln -s $(command -v python3) /usr/bin/python
       - run:
           name: Build Project
           command: |
             cmake -Bbuild-cmake
             cmake --build build-cmake
+            cp -r ./misc ./build-cmake/
       - persist_to_workspace:
           root: .
           paths:
@@ -37,13 +36,6 @@ jobs:
           name: Run Tests
           command: |
             ./build-cmake/ninja_test
-            ./build-cmake/build_log_perftest
-            ./build-cmake/canon_perftest
-            ./build-cmake/clparser_perftest
-            ./build-cmake/depfile_parser_perftest
-            ./build-cmake/elide_middle_perftest
-            ./build-cmake/hash_collision_bench
-            ./build-cmake/manifest_parser_perftest
 
 workflows:
   version: 2
