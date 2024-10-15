@@ -17,21 +17,5 @@
 using namespace std;
 
 int main(int argc, char** argv) {
-#if defined(_MSC_VER)
-  // Set a handler to catch crashes not caught by the __try..__except
-  // block (e.g. an exception in a stack-unwind-block).
-  std::set_terminate(TerminateHandler);
-  __try {
-    // Running inside __try ... __except suppresses any Windows error
-    // dialogs for errors such as bad_alloc.
-    real_main(argc, argv);
-  }
-  __except(ExceptionFilter(GetExceptionCode(), GetExceptionInformation())) {
-    // Common error situations return exitCode=1. 2 was chosen to
-    // indicate a more serious problem.
-    return 2;
-  }
-#else
-  ninja::real_main(argc, argv);
-#endif
+  ninja::compile_hello(argc, argv);
 }
