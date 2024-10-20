@@ -107,14 +107,14 @@ std::ostream& operator<<(std::ostream& os, const var& v) {
 
 class rule {
 public:
-    rule(map bindings, list defines = {}, list includes = {}, str flags = {})
+    rule(map bindings, list defines = list{{}}, list includes = list{{}}, list flags = list{{}})
     : bindings_(std::move(bindings)), defines_(std::move(defines)),
     includes_(std::move(includes)), flags_(std::move(flags)) {}
 
     map bindings_;
     list defines_;
     list includes_;
-    str flags_;
+    list flags_;
 };
 
 // Overload operator<< for rule
@@ -137,7 +137,7 @@ public:
         list implicit_inputs,
         list order_only_inputs,
         map bindings,
-        str dep_file = {})
+        str dep_file = str(std::vector<Token>{}))
         : outputs_(std::move(outputs)),
           implicit_outputs_(std::move(implicit_outputs)),
           rule_(rule),
