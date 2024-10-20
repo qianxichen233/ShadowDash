@@ -107,9 +107,14 @@ std::ostream& operator<<(std::ostream& os, const var& v) {
 
 class rule {
 public:
-    rule(map bindings) : bindings_(std::move(bindings)) {}
+    rule(map bindings, list defines = {}, list includes = {}, str flags = {})
+    : bindings_(std::move(bindings)), defines_(std::move(defines)),
+    includes_(std::move(includes)), flags_(std::move(flags)) {}
 
     map bindings_;
+    list defines_;
+    list includes_;
+    str flags_;
 };
 
 // Overload operator<< for rule
@@ -131,14 +136,16 @@ public:
         list inputs,
         list implicit_inputs,
         list order_only_inputs,
-        map bindings)
+        map bindings,
+        str dep_file = {})
         : outputs_(std::move(outputs)),
           implicit_outputs_(std::move(implicit_outputs)),
           rule_(rule),
           inputs_(std::move(inputs)),
           implicit_inputs_(std::move(implicit_inputs)),
           order_only_inputs_(std::move(order_only_inputs)),
-          bindings_(std::move(bindings)) {
+          bindings_(std::move(bindings)),
+          dep_file_(std::move(dep_file)) {
         //std::cout << "creating build: ";
         //std::cout << "creating build outputs: ";
         //std::cout << this->outputs_ << std::endl;
@@ -151,6 +158,7 @@ public:
     list implicit_inputs_;
     list order_only_inputs_;
     map bindings_;
+    str dep_file_;
 };
 
 // Overload operator<< for build
