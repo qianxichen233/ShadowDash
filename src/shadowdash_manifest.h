@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <optional>
 
 namespace shadowdash {
 
@@ -149,6 +150,7 @@ std::ostream& operator<<(std::ostream& os, const rule& r) {
     return os;
 }
 
+// example usage:
 class build {
 public:
     build(
@@ -178,6 +180,31 @@ public:
     list implicit_inputs_;
     list order_only_inputs_;
     map bindings_;
+    std::string pool;
+};
+
+// example usage: pool("console", 1)
+class pool {
+    public:
+        pool(
+            str name,
+            int depth)
+        : name_(std::move(name)),
+          depth_(std::move(depth)) {};
+
+        str name_;
+        int depth_;
+};
+
+
+class shadowdash_default {
+  public:
+      shadowdash_default(
+          list target
+          )
+      : target_(std::move(target)) {};
+
+      list target_;
 };
 
 // Overload operator<< for build
@@ -199,9 +226,12 @@ std::ostream& operator<<(std::ostream& os, const build& b) {
 
 class buildGroup {
 public:
-    buildGroup(std::vector<build> builds) : builds(std::move(builds)) {}
+    buildGroup(std::vector<build> builds, std::vector<pool> pools) : builds(std::move(builds)), pools(std::move(pools)), default_({}) {}
+    buildGroup(std::vector<build> builds, std::vector<pool> pools, shadowdash_default default_) : builds(std::move(builds)), pools(std::move(pools)), default_({default_}) {}
 
     std::vector<build> builds;
+    std::vector<pool> pools;
+    std::vector<shadowdash_default> default_;
 };
 
 // Overload operator<< for buildGroup
@@ -232,3 +262,12 @@ static auto out = "out"_v;
             __VA_ARGS__      \
         }                    \
     }
+
+// pool
+#define set_pool(name, depth) \
+  pool name = pool(str({#name}), depth)
+
+// default
+#define default(...) auto default_target = shadowdash_default(list{{str{{__VA_ARGS__}}}});
+//#define default(...) \
+//    auto default_target = shadowdash_default(list{{__VA_ARGS__}});
