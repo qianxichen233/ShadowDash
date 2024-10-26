@@ -1678,51 +1678,106 @@ NORETURN void compile_hello(int argc, char** argv) {
 }
 
 Rule* shadowdash_build_rule(shadowdash::rule rule) {
-    cout << "start build rule" << endl;
-    for (const auto& binding : rule.bindings_) {
-        Rule* rule_ninja = new Rule("test");
+    if(rule.is_special)
+    {
+        if(rule._rule_data.sp_rule == shadowdash::rule::phony)
+        {
+          const Rule* rule = &State::kPhonyRule;
+          return (Rule*)rule;
+        }
+        else
+        {
+          cout << "unknown special rule" << endl;
+          exit(1);
+        }
+    }
+
+    Rule* rule_ninja = new Rule("test");
+    for (const auto& binding : rule._rule_data.bindings_) {
         EvalString *value = new EvalString;
+        bool first_iteration = true;
         for(shadowdash::Token token : binding.second.tokens_)
         {
             if(token.type_ == token.LITERAL)
                 value->AddText(token.value_);
             else if(token.type_ == token.VAR)
                 value->AddSpecial(token.value_);
-            value->AddText(" ");
+            first_iteration = false;
         }
         rule_ninja->AddBinding(binding.first, *value);
-        cout << "done build rule" << endl;
-        return rule_ninja;
     }
-    cout << "build rule failed" << endl;
-    return nullptr;
+    return rule_ninja;
 }
 
 void shadowdash_build_edge(const shadowdash::build& build, State* state, string* err) {
-    cout << "start build edge: " << build << endl;
     Rule* rule = shadowdash_build_rule(build.rule_);
     Edge* edge = state->AddEdge(rule);
 
-    string output;
     for(const shadowdash::str& str : build.outputs_.values_) {
+        string output;
         for (const shadowdash::Token& token: str.tokens_) {
-            // cout << "token: " << token.type_ << endl;
             output.append(token.value_);
         }
+        state->AddOut(edge, output, 0, err);
     }
 
-    string input;
-    for(const shadowdash::str& str : build.inputs_.values_) {
+    int implicit_output = 0;
+    for(const shadowdash::str& str : build.implicit_outputs_.values_) {
+        string output;
         for (const shadowdash::Token& token: str.tokens_) {
-            // cout << "token: " << token.type_ << endl;
+            output.append(token.value_);
+        }
+        ++implicit_output;
+        state->AddOut(edge, output, 0, err);
+    }
+    edge->implicit_outs_ = implicit_output;
+
+    for(const shadowdash::str& str : build.inputs_.values_) {
+        string input;
+        for (const shadowdash::Token& token: str.tokens_) {
             input.append(token.value_);
         }
+        state->AddIn(edge, input, 0);
     }
 
-    state->AddOut(edge, output, 0, err);
-    state->AddIn(edge, input, 0);
+    int implicit_input = 0;
+    for(const shadowdash::str& str : build.implicit_inputs_.values_) {
+        string input;
+        for (const shadowdash::Token& token: str.tokens_) {
+            input.append(token.value_);
+        }
+        ++implicit_input;
+        state->AddIn(edge, input, 0);
+    }
 
-    cout << "build edge: output: " << output << ", input: " << input << endl;
+    int order_only = 0;
+    for(const shadowdash::str& str : build.order_only_inputs_.values_) {
+        string input;
+        for (const shadowdash::Token& token: str.tokens_) {
+            input.append(token.value_);
+        }
+        ++order_only;
+        state->AddIn(edge, input, 0);
+    }
+    edge->implicit_deps_ = implicit_input;
+    edge->order_only_deps_ = order_only;
+
+    BindingEnv *env_ = &state->bindings_;
+    BindingEnv* env = new BindingEnv(env_);
+    for (const auto& binding : build.bindings_) {
+        EvalString *value = new EvalString;
+        bool first_iteration = true;
+        for(shadowdash::Token token : binding.second.tokens_)
+        {
+            if(token.type_ == token.LITERAL)
+                value->AddText(token.value_);
+            else if(token.type_ == token.VAR)
+                value->AddSpecial(token.value_);
+            first_iteration = false;
+        }
+        env->AddBinding(binding.first, value->Evaluate(env_));
+    }
+    edge->env_ = env;
 }
 
 NORETURN void shadowdash_compile(int argc, char** argv, shadowdash::buildGroup& builds) {
@@ -1746,6 +1801,12 @@ NORETURN void shadowdash_compile(int argc, char** argv, shadowdash::buildGroup& 
     for(const shadowdash::build& build: builds.builds) {
         shadowdash_build_edge(build, &ninja.state_, err);
     }
+    
+    if (!ninja.EnsureBuildDirExists())
+      exit(1);
+
+    if (!ninja.OpenBuildLog() || !ninja.OpenDepsLog())
+      exit(1);
 
     // graph building done, start actual building
     int result = ninja.RunBuild(argc, argv, status);

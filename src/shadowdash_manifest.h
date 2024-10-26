@@ -105,23 +105,45 @@ std::ostream& operator<<(std::ostream& os, const var& v) {
     return os;
 }
 
+
 class rule {
 public:
-    rule(map bindings, list defines = list{{}}, list includes = list{{}}, list flags = list{{}})
-    : bindings_(std::move(bindings)), defines_(std::move(defines)),
-    includes_(std::move(includes)), flags_(std::move(flags)) {}
+    enum SPECIAL_RULE {
+        phony
+    };
 
-    map bindings_;
-    list defines_;
-    list includes_;
-    list flags_;
+    union _rule {
+        _rule() : sp_rule(phony) {}
+        _rule(map bindings) : bindings_(std::move(bindings)) {}
+        _rule(SPECIAL_RULE sr) : sp_rule(sr) {}
+        ~_rule() {}
+
+        map bindings_;
+        SPECIAL_RULE sp_rule;
+    } _rule_data;
+    bool is_special;
+
+    rule(map bindings) : _rule_data(std::move(bindings)), is_special(false) {}
+    rule(SPECIAL_RULE sp_rule) : _rule_data(sp_rule), is_special(true) {}
+
+    rule(const rule& other) : is_special(other.is_special) {
+        if (is_special) {
+            new (&_rule_data) _rule(other._rule_data.sp_rule);  // Copy the special rule
+        } else {
+            new (&_rule_data) _rule(other._rule_data.bindings_);  // Copy the bindings map
+        }
+    }
 };
 
 // Overload operator<< for rule
 std::ostream& operator<<(std::ostream& os, const rule& r) {
     os << "rule: [";
-    for (const auto& binding : r.bindings_) {
-        os << binding.first << ": " << binding.second << ", ";
+    if(r.is_special)
+        os << r._rule_data.sp_rule;
+    else {
+        for (const auto& binding : r._rule_data.bindings_) {
+            os << binding.first << ": " << binding.second << ", ";
+        }
     }
     os << "]";
     return os;
