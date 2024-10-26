@@ -1,0 +1,1 @@
+../src/shadowdash_manifest.h
