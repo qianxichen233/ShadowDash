@@ -105,6 +105,20 @@ std::ostream& operator<<(std::ostream& os, const var& v) {
     return os;
 }
 
+class pool{
+public:
+    pool(std::string name, int depth):
+    name_(std::move(name)), depth_(depth) {}
+
+    std::string name_;
+    int depth_;
+};
+
+// Overload output operator for pool
+std::ostream& operator<<(std::ostream& os, const pool& p) {
+    os << "pool: { name: " << p.name_ << ", depth: " << p.depth_ << " }";
+    return os;
+}
 
 class rule {
 public:
@@ -122,11 +136,12 @@ public:
         SPECIAL_RULE sp_rule;
     } _rule_data;
     bool is_special;
+    std::optional<pool> assigned_pool;
 
-    rule(map bindings) : _rule_data(std::move(bindings)), is_special(false) {}
-    rule(SPECIAL_RULE sp_rule) : _rule_data(sp_rule), is_special(true) {}
+    rule(map bindings, std::optional<pool> p = std::nullopt) : _rule_data(std::move(bindings)), is_special(false), assigned_pool(std::move(p)) {}
+    rule(SPECIAL_RULE sp_rule, std::optional<pool> p = std::nullopt) : _rule_data(sp_rule), is_special(true), assigned_pool(std::move(p)) {}
 
-    rule(const rule& other) : is_special(other.is_special) {
+    rule(const rule& other) : is_special(other.is_special), assigned_pool(other.assigned_pool) {
         if (is_special) {
             new (&_rule_data) _rule(other._rule_data.sp_rule);  // Copy the special rule
         } else {
@@ -145,9 +160,16 @@ std::ostream& operator<<(std::ostream& os, const rule& r) {
             os << binding.first << ": " << binding.second << ", ";
         }
     }
-    os << "]";
+    if(r.assigned_pool){
+        os << "pool: " << r.assigned_pool->name_ 
+        << ", depth: " << r.assigned_pool->depth_;
+        os << "]";
+    }
+    
     return os;
 }
+
+
 
 class build {
 public:
