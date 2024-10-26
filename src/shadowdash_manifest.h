@@ -203,6 +203,7 @@ public:
     list order_only_inputs_;
     map bindings_;
     str dep_file_;
+    
 };
 
 // Overload operator<< for build
@@ -222,12 +223,19 @@ std::ostream& operator<<(std::ostream& os, const build& b) {
     return os;
 }
 
+class default_ {
+public:
+    default_(list targets): targets(std::move(targets)){}
+    list targets;
+};
+
 class buildGroup {
 public:
     buildGroup(std::vector<build> builds) : builds(std::move(builds)) {}
 
     std::vector<build> builds;
 };
+
 
 // Overload operator<< for buildGroup
 std::ostream& operator<<(std::ostream& os, const buildGroup& bg) {
