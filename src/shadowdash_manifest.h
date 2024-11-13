@@ -73,9 +73,11 @@ public:
     } _rule_data;
     bool is_special;
 
+    // Constructor for regular and special rules
     rule__(map bindings) : _rule_data(bindings), is_special(false) {}
     rule__(SPECIAL_RULE sp_rule) : _rule_data(sp_rule), is_special(true) {}
 
+    // Copy constructor, handles both regular and special rules
     rule__(const rule__& other) : is_special(other.is_special) {
         if (is_special) {
             new (&_rule_data) _rule(other._rule_data.sp_rule);
@@ -115,18 +117,20 @@ public:
     std::string pool;
 };
 
+// Define a resource pool with name and maximum depth
 class pool {
 public:
     pool(
         str_ name,
         int depth)
         : name_(name),
-          depth_(depth) {};
+          depth_(depth) {}; // Maximum allowable concurrent tasks in this pool.
 
     str_ name_;
     int depth_;
 };
 
+// Represent a default target in the build configuration
 class shadowdash_default {
 public:
     shadowdash_default(
@@ -152,6 +156,7 @@ static auto out = "out"_v;
 
 } // namespace shadowdash
 
+// Macors to simplify the syntax for defining vairables, offering a concise way to create ShadowDash configs.
 #define let(name, ...)         \
     var name {                \
         #name, str_ {         \
