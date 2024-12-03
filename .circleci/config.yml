@@ -1,0 +1,55 @@
+version: 2.1
+
+executors:
+  docker-executor:
+    docker:
+      - image: cimg/base:stable
+
+jobs:
+  build:
+    executor: docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y clang-tidy
+            sudo apt-get install -y python3
+            [ -x "$(command -v python)" ] || ln -s $(command -v python3) /usr/bin/python
+      - run:
+          name: Build Project
+          command: |
+            cmake -Bbuild-cmake
+            cmake --build build-cmake
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build-cmake
+
+  test:
+    executor: docker-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run Tests
+          command: |
+            ./build-cmake/ninja_test
+            ./build-cmake/build_log_perftest
+            ./build-cmake/canon_perftest
+            ./build-cmake/clparser_perftest
+            ./build-cmake/depfile_parser_perftest
+            ./build-cmake/elide_middle_perftest
+            ./build-cmake/hash_collision_bench
+            ./build-cmake/manifest_parser_perftest
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
