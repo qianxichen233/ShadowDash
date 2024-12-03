@@ -3,7 +3,7 @@ version: 2.1
 executors:
   docker-executor:
     docker:
-      - image: cimg/base:stable
+      - image: cloudcomputing321/shadowdash:latest
 
 jobs:
   build:
@@ -11,39 +11,33 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Dependencies
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y clang-tidy
-            sudo apt-get install -y python3
-            [ -x "$(command -v python)" ] || ln -s $(command -v python3) /usr/bin/python
-      - run:
           name: Build Project
           command: |
             cmake -Bbuild-cmake
             cmake --build build-cmake
+      - run:
+          name: Run clang-format
+          command: |
+            find . -iname '*.cpp' -o -iname '*.h' | xargs clang-format --dry-run
       - persist_to_workspace:
           root: .
           paths:
             - build-cmake
 
   test:
+    parallelism: 4
     executor: docker-executor
     steps:
       - checkout
       - attach_workspace:
           at: .
       - run:
-          name: Run Tests
+          name: Run Tests In Parallelism with CTests
           command: |
-            ./build-cmake/ninja_test
-            ./build-cmake/build_log_perftest
-            ./build-cmake/canon_perftest
-            ./build-cmake/clparser_perftest
-            ./build-cmake/depfile_parser_perftest
-            ./build-cmake/elide_middle_perftest
-            ./build-cmake/hash_collision_bench
-            ./build-cmake/manifest_parser_perftest
+            cd build-cmake
+            ctest --output-junit results.xml --verbose -j4
+      - store_test_results:
+          path: build-cmake
 
 workflows:
   version: 2
