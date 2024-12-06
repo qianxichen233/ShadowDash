@@ -3,6 +3,17 @@ cmake_minimum_required(VERSION 3.15)
 include(CheckSymbolExists)
 include(CheckIPOSupported)
 
+# Enable testing
+enable_testing()
+
+# Config clang-tidy
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+if(CLANG_TIDY_EXE)
+  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+else()
+  message(WARNING "clang-tidy not found!")
+endif()
+
 option(NINJA_BUILD_BINARY "Build ninja binary" ON)
 option(NINJA_FORCE_PSELECT "Use pselect() even on platforms that provide ppoll()" OFF)
 
@@ -312,6 +323,11 @@ if(BUILD_TESTING)
   endif()
 
   add_test(NAME NinjaTest COMMAND ninja_test)
+  add_test(NAME build_log_perftest COMMAND build_log_perftest)
+  add_test(NAME canon_perftest COMMAND canon_perftest)
+  add_test(NAME clparser_perftest COMMAND clparser_perftest)
+  add_test(NAME elide_middle_perftest COMMAND elide_middle_perftest)
+  add_test(NAME hash_collision_bench COMMAND hash_collision_bench)
 endif()
 
 if(NINJA_BUILD_BINARY)

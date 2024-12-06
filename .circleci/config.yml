@@ -1,0 +1,49 @@
+version: 2.1
+
+executors:
+  docker-executor:
+    docker:
+      - image: cloudcomputing321/shadowdash:latest
+
+jobs:
+  build:
+    executor: docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Build Project
+          command: |
+            cmake -Bbuild-cmake
+            cmake --build build-cmake
+      - run:
+          name: Run clang-format
+          command: |
+            find . -iname '*.cpp' -o -iname '*.h' | xargs clang-format --dry-run
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build-cmake
+
+  test:
+    parallelism: 4
+    executor: docker-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run Tests In Parallelism with CTests
+          command: |
+            cd build-cmake
+            ctest --output-junit results.xml --verbose -j4
+      - store_test_results:
+          path: build-cmake
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
