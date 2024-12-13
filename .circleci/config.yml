@@ -36,6 +36,7 @@ jobs:
           command: |
             cd build-cmake
             ctest --output-junit results.xml --verbose -j4
+            cd ../hello_world_graph && ././hello_world_graph_test.sh
       - store_test_results:
           path: build-cmake
 

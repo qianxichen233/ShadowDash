@@ -7,12 +7,12 @@ include(CheckIPOSupported)
 enable_testing()
 
 # Config clang-tidy
-find_program(CLANG_TIDY_EXE NAMES clang-tidy)
-if(CLANG_TIDY_EXE)
-  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
-else()
-  message(WARNING "clang-tidy not found!")
-endif()
+# find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+# if(CLANG_TIDY_EXE)
+#   set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+# else()
+#   message(WARNING "clang-tidy not found!")
+# endif()
 
 option(NINJA_BUILD_BINARY "Build ninja binary" ON)
 option(NINJA_FORCE_PSELECT "Use pselect() even on platforms that provide ppoll()" OFF)

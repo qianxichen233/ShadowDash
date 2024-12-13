@@ -1616,9 +1616,75 @@ NORETURN void real_main(int argc, char** argv) {
   exit(1);
 }
 
+// routine to compile the example hello.cc by manually
+// constructing the graph
+void compile_hello(int argc, char** argv) {
+  // ninja initialization
+  const char* ninja_command = argv[0];
+  BuildConfig config;
+  Options options = {};
+
+  int exit_code = ReadFlags(&argc, &argv, &options, &config);
+  if (exit_code >= 0)
+    exit(exit_code);
+
+  Status* status = Status::factory(config);
+
+  NinjaMain ninja(ninja_command, config);
+
+  string* err;
+
+  // start building hello world graph
+
+  // create a compile rule
+  Rule* rule_compile = new Rule("compile");
+  EvalString value1;
+  value1.AddText("g++ -c ");
+  value1.AddSpecial("in");
+  value1.AddText(" -o ");
+  value1.AddSpecial("out");
+  rule_compile->AddBinding("command", value1);
+
+  // create a link rule
+  Rule* rule_link = new Rule("link");
+  EvalString value2;
+  value2.AddText("g++ ");
+  value2.AddSpecial("in");
+  value2.AddText(" -o ");
+  value2.AddSpecial("out");
+  rule_link->AddBinding("command", value2);
+
+  // add build from hello.cc to hello.o
+  Edge* edge_compile = ninja.state_.AddEdge(rule_compile);
+
+  ninja.state_.AddOut(edge_compile, "hello.o", 0, err);
+  ninja.state_.AddIn(edge_compile, "hello.cc", 0);
+
+  // add build from hello.o to hello
+  Edge* edge_link = ninja.state_.AddEdge(rule_link);
+
+  ninja.state_.AddOut(edge_link, "hello", 0, err);
+  ninja.state_.AddIn(edge_link, "hello.o", 0);
+
+  // feed to ninja and run the build
+  int result = ninja.RunBuild(argc, argv, status);
+  exit(result);
+}
+
 }  // anonymous namespace
 
 int main(int argc, char** argv) {
+  // add a branch to run our hello world program
+  // compilation routine. We can cleanly seperate
+  // this in another file and generate a dedicated
+  // executable to compile hello.cc, but we believe
+  // this does not worth the effort since this task
+  // is more like an experiment
+  if(argc == 2 && !strcmp(argv[1], "hello"))
+  {
+    compile_hello(argc, argv);
+    return 0;
+  }
 #if defined(_MSC_VER)
   // Set a handler to catch crashes not caught by the __try..__except
   // block (e.g. an exception in a stack-unwind-block).

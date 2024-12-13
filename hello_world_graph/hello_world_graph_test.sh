@@ -1,0 +1,1 @@
+../build-cmake/ninja hello && test "$(./hello)" = "Hello, World!"
